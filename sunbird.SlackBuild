@@ -1,0 +1,97 @@
+#!/bin/sh
+#
+# Slackware build script for Mozilla Sunbird
+# Written by Georgi D. Sotirov <gdsotirov@dir.bg>
+#
+
+. ../slack-package.conf
+
+NAME=sunbird
+VERSION=0.9
+ARCH=i686
+LOCFILE=en-US
+LOCALE=en_US
+BUILD=1
+
+CWD=`pwd`
+TMP=${TMP:-/tmp}
+PKG=$TMP/package-$NAME
+
+if [ ! -d $TMP ]; then
+  mkdir -p $TMP
+fi
+
+rm -rf $PKG
+mkdir -p $PKG/usr/lib
+
+( cd $PKG/usr/lib
+  echo "*** Extracting files..."
+  tar -zxvf $CWD/${NAME}-${VERSION}.${LOCFILE}.linux-${ARCH}.tar.gz
+  mv $NAME $NAME-$VERSION
+  ln -sf $NAME-$VERSION $NAME
+  cd $NAME-$VERSION
+)
+
+mkdir -p $PKG/usr/bin
+( cd $PKG/usr/bin
+  ln -sf /usr/lib/$NAME-$VERSION/$NAME .
+)
+
+echo "*** Configuring environment..."
+install -m 755 -d $PKG/usr/share/applications
+install -m 644 $CWD/$NAME.desktop $PKG/usr/share/applications/$NAME.desktop
+install -m 755 -d $PKG/$KDE_PATH/share/icons/hicolor/128x128
+install -m 644 $PKG/usr/lib/$NAME-$VERSION/icons/mozicon128.png \
+               $PKG/$KDE_PATH/share/icons/hicolor/128x128/$NAME.png
+install -m 755 -d $PKG/$KDE_PATH/share/icons/hicolor/48x48
+convert $PKG/usr/lib/$NAME-$VERSION/icons/mozicon50.xpm \
+        $PKG/$KDE_PATH/share/icons/hicolor/48x48/$NAME.png
+install -m 755 -d $PKG/$KDE_PATH/share/icons/hicolor/32x32
+convert -scale 32x32 \
+        $PKG/usr/lib/$NAME-$VERSION/icons/mozicon50.xpm \
+        $PKG/$KDE_PATH/share/icons/hicolor/32x32/$NAME.png
+install -m 755 -d $PKG/$KDE_PATH/share/icons/hicolor/16x16
+convert $PKG/usr/lib/$NAME-$VERSION/icons/mozicon16.xpm \
+        $PKG/$KDE_PATH/share/icons/hicolor/16x16/$NAME.png
+install -m 755 -d $PKG/usr/share/pixmaps
+convert $PKG/usr/lib/$NAME-$VERSION/icons/mozicon50.xpm \
+        $PKG/usr/share/pixmaps/$NAME.png
+
+echo "*** Prepring package..."
+bin_perms $PKG
+
+# Documentation
+install -m 755 -d $PKG/usr/doc/$NAME-$VERSION$LOCALE
+install -m 644 $PKG/usr/lib/$NAME-$VERSION/README.txt \
+               $PKG/usr/doc/$NAME-$VERSION$LOCALE/README
+install -m 644 $CWD/MPLLIC $PKG/usr/doc/$NAME-$VERSION$LOCALE/COPYING
+
+# Install info
+install -m 755 -d $PKG/install
+install -m 644 $CWD/slack-desc     $PKG/install/slack-desc
+install -m 644 $CWD/slack-required $PKG/install/slack-required
+install -m 644 $CWD/slack-suggests $PKG/install/slack-suggests
+
+# Build information
+SBDIR=$PKG/usr/src/slackbuilds/$NAME-$VERSION$LOCALE
+install -m 755 -d $SBDIR
+install -m 644 $CWD/slack-desc          $SBDIR/slack-desc
+install -m 644 $CWD/slack-required      $SBDIR/slack-required
+install -m 644 $CWD/slack-suggests      $SBDIR/slack-suggests
+install -m 644 $CWD/$NAME.desktop       $SBDIR/$NAME.desktop
+install -m 644 $CWD/MPLLIC              $SBDIR/MPLLIC
+install -m 644 $CWD/$NAME.SlackBuild    $SBDIR/$NAME.SlackBuild
+
+echo "*** Building package..."
+PKG_DIR=${PKG_DIR:-$TMP}
+cd $PKG
+PKGNAME=$NAME-$VERSION$LOCALE-$ARCH-$BUILD$MYIN
+makepkg -l y -c n $PKG_DIR/$PKGNAME.tgz
+cat $CWD/slack-desc > $PKG_DIR/$PKGNAME.txt
+md5sum $PKG_DIR/$PKGNAME.tgz > $PKG_DIR/$PKGNAME.tgz.md5
+
+echo "*** Cleaning up..."
+rm -r $PKG
+
+echo "*** All done."
+
